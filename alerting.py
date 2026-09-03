@@ -17,8 +17,8 @@ SMTP_PORT = 465  # SSL
 
 # ===== TELEGRAM SETTINGS =====
 TELEGRAM_ENABLED = True         # set True after filling details
-TELEGRAM_BOT_TOKEN = "8507223463:AAFbtduIH1oyKYhzHVz2eRz4Fss8H49s2jE"
-TELEGRAM_CHAT_ID = "1081132116"   # e.g. 123456789
+TELEGRAM_BOT_TOKEN = "TELEGRAM BOT TOKEN"
+TELEGRAM_CHAT_ID = "TELEGRAM CHAT ID"   # e.g. 123456789
 
 
 ###########################################################

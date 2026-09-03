@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Log-Based IDS — Dashboard</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+
+<body class="bg-dark text-light" id="body">
+
+<div class="d-flex" id="page-wrapper">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar" class="bg-black border-end border-secondary">
+    <div class="sidebar-header p-3 text-center">
+      <h4 class="mb-0">🔰 Log IDS</h4>
+      <small class="text-muted">Adaptive SOC</small>
+    </div>
+
+    <ul class="nav flex-column p-2">
+
+      <!-- Navigation -->
+      <li class="nav-item">
+        <a class="nav-link text-light" href="/">
+          <i class="fa fa-tachometer-alt me-2"></i> Dashboard
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link text-light" href="/incidents">
+          <i class="fa fa-list me-2"></i> Incidents
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link text-light" href="/graphs">
+          <i class="fa fa-chart-bar me-2"></i> Graphs
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link text-light" href="/export/csv">
+          <i class="fa fa-download me-2"></i> Export CSV
+        </a>
+      </li>
+
+      <!-- Divider -->
+      <li class="nav-item mt-3">
+        <div class="px-3 text-muted small">Appearance</div>
+        <button id="theme-toggle"
+                class="btn btn-sm btn-outline-light m-3 w-75">
+          <i class="fa fa-moon me-2"></i> Theme
+        </button>
+      </li>
+
+    </ul>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="flex-grow-1" id="content-area">
+
+    <!-- TOPBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary">
+      <div class="container-fluid">
+
+        <button class="btn btn-sm btn-outline-light d-md-none" id="sidebar-toggle">
+          <i class="fa fa-bars"></i>
+        </button>
+
+        <a class="navbar-brand ms-2" href="/">Log IDS</a>
+
+        <div class="d-flex align-items-center ms-auto">
+
+          <!-- Refresh indicator -->
+          <div class="me-3 text-muted small" id="refresh-indicator">
+            <i class="fa fa-sync-alt fa-spin me-1"></i>
+            Next refresh in <span id="refresh-counter">10</span>s
+          </div>
+
+          <!-- Analytics -->
+          <a class="btn btn-sm btn-outline-light" href="/graphs">
+            <i class="fa fa-chart-line me-1"></i> Analytics
+          </a>
+
+        </div>
+      </div>
+    </nav>
+
+    <!-- PAGE CONTENT -->
+    <main class="p-4">
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Sidebar + Theme utility -->
+<script>
+(function () {
+
+  const sidebar = document.getElementById('sidebar');
+  const toggle = document.getElementById('sidebar-toggle');
+
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+    });
+  }
+
+  // Theme toggle (global)
+  const body = document.getElementById('body');
+  const themeToggle = document.getElementById('theme-toggle');
+
+  let dark = localStorage.getItem('ids_theme') !== 'light';
+
+  function applyTheme() {
+    if (dark) {
+      body.classList.remove('light-mode');
+      themeToggle.innerHTML = '<i class="fa fa-moon me-2"></i> Dark';
+    } else {
+      body.classList.add('light-mode');
+      themeToggle.innerHTML = '<i class="fa fa-sun me-2"></i> Light';
+    }
+  }
+
+  applyTheme();
+
+  themeToggle.addEventListener('click', () => {
+    dark = !dark;
+    localStorage.setItem('ids_theme', dark ? 'dark' : 'light');
+    applyTheme();
+  });
+
+})();
+</script>
+
+</body>
+</html>

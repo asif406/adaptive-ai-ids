@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+
+  <!-- Header -->
+  <div class="row g-3 mb-3 align-items-center">
+    <div class="col-md-6">
+      <h2 class="mb-0">Dashboard</h2>
+      <small class="text-muted">Real-time incidents & analytics</small>
+    </div>
+
+    <div class="col-md-6 text-end">
+      <button id="enable-sound" class="btn btn-sm btn-outline-success me-2">
+        Enable Sound Alerts
+      </button>
+      <button id="pause-btn" class="btn btn-sm btn-outline-light">
+        Pause Auto-Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div class="row mb-3">
+    <div class="col-md-3"><div class="card bg-secondary text-light"><div class="card-body">
+      <small>Total Incidents</small><h3>{{ total }}</h3>
+    </div></div></div>
+
+    <div class="col-md-3"><div class="card bg-danger text-light"><div class="card-body">
+      <small>High Severity</small><h3>{{ high_count }}</h3>
+    </div></div></div>
+
+    <div class="col-md-3"><div class="card bg-warning text-dark"><div class="card-body">
+      <small>SQL Injection</small><h3>{{ sqli_count }}</h3>
+    </div></div></div>
+
+    <div class="col-md-3"><div class="card bg-info text-dark"><div class="card-body">
+      <small>DoS Alerts</small><h3>{{ dos_count }}</h3>
+    </div></div></div>
+  </div>
+
+  <!-- Main -->
+  <div class="row">
+
+    <!-- LEFT COLUMN -->
+    <div class="col-md-4">
+
+      <!-- Live Feed -->
+      <div class="card mb-3 bg-dark text-light">
+        <div class="card-body">
+          <h6>Live Attack Feed</h6>
+          <div id="live-feed" class="small"></div>
+        </div>
+      </div>
+
+      <!-- Top Attackers -->
+      <div class="card bg-dark text-light">
+        <div class="card-body">
+          <h6>Top Attackers</h6>
+          <ul id="top-ips" class="list-group list-group-flush"></ul>
+        </div>
+      </div>
+
+      <!-- Blocked IPs -->
+      <div class="card mt-3 bg-dark text-light">
+        <div class="card-body">
+          <h6>🚫 Blocked IPs</h6>
+          {% if blocked_ips %}
+          <table class="table table-sm table-dark table-striped">
+            <thead>
+              <tr><th>IP</th><th>Reason</th><th>Blocked At</th></tr>
+            </thead>
+            <tbody>
+              {% for ip in blocked_ips %}
+              <tr>
+                <td class="text-danger fw-bold">{{ ip[0] }}</td>
+                <td>{{ ip[1] }}</td>
+                <td>{{ ip[2] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+            <p class="text-muted small">No IPs blocked yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-md-8">
+      <div class="card bg-dark text-light">
+        <div class="card-body p-2">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th><th>IP</th><th>Country</th><th>Time</th>
+                  <th>Rule</th><th>Severity</th><th>Score</th><th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="incident-body">
+                {% for row in incidents %}
+                <tr
+                  data-ip="{{ row[1] }}"
+                  data-sev="{{ row[4] }}"
+                  data-msg="{{ row[5] }}"
+                  data-time="{{ row[2] }}"
+                >
+                  <td>{{ row[0] }}</td>
+                  <td>{{ row[1] }}</td>
+                  <td>{{ row[6] }}</td>
+                  <td>{{ row[2] }}</td>
+                  <td>{{ row[3] }}</td>
+                  <td>
+                    <span class="badge bg-{% if row[4]=='HIGH' %}danger{% elif row[4]=='MEDIUM' %}warning text-dark{% else %}secondary{% endif %}">
+                      {{ row[4] }}
+                    </span>
+                  </td>
+                  <td>{{ row[7] }}</td>
+                  <td>{{ row[5] }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 🔊 Sound -->
+<audio id="sound-low" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="sound-med" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"></audio>
+<audio id="sound-high" src="https://actions.google.com/sounds/v1/alarms/warning_beeps.ogg"></audio>
+
+<script>
+/* ===== Sound ===== */
+let SOUND = false;
+const sL = document.getElementById("sound-low");
+const sM = document.getElementById("sound-med");
+const sH = document.getElementById("sound-high");
+
+document.getElementById("enable-sound").onclick = () => {
+  SOUND = true;
+  sL.play().catch(()=>{});
+  document.getElementById("enable-sound").textContent = "Sound Enabled";
+};
+
+function playSound(sev){
+  if(!SOUND) return;
+  if(sev==="HIGH") sH.play().catch(()=>{});
+  else if(sev==="MEDIUM") sM.play().catch(()=>{});
+  else sL.play().catch(()=>{});
+}
+
+/* ===== Auto Refresh ===== */
+let refresh=true;
+setInterval(()=>{ if(refresh) location.reload(); },10000);
+document.getElementById("pause-btn").onclick=()=>{
+  refresh=!refresh;
+  document.getElementById("pause-btn").textContent =
+    refresh ? "Pause Auto-Refresh" : "Resume Auto-Refresh";
+};
+
+/* ===== Top Attackers ===== */
+function rebuildTopIPs(){
+  const rows=[...document.querySelectorAll("#incident-body tr")];
+  const c={};
+  rows.forEach(r=>c[r.dataset.ip]=(c[r.dataset.ip]||0)+1);
+  document.getElementById("top-ips").innerHTML =
+    Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(i=>`<li class="list-group-item bg-dark text-light">${i[0]} (${i[1]})</li>`).join("");
+}
+
+/* ===== Live Feed (FIXED) ===== */
+function buildLiveFeed(){
+  const feed=document.getElementById("live-feed");
+  const rows=[...document.querySelectorAll("#incident-body tr")].slice(0,6);
+  feed.innerHTML="";
+
+  if(!rows.length){
+    feed.innerHTML="<span class='text-muted'>No events yet…</span>";
+    return;
+  }
+
+  rows.forEach(r=>{
+    const sev=r.dataset.sev;
+    const ip=r.dataset.ip;
+    const msg=r.dataset.msg;
+    const time=r.dataset.time;
+
+    const div=document.createElement("div");
+    div.className="mb-2 p-2 rounded bg-secondary bg-opacity-10";
+    div.innerHTML=`
+      <span class="badge bg-${sev==='HIGH'?'danger':sev==='MEDIUM'?'warning text-dark':'secondary'}">${sev}</span>
+      <strong class="ms-1">${ip}</strong>
+      <div class="small mt-1">${msg}</div>
+      <div class="small text-muted">${time}</div>
+    `;
+    feed.appendChild(div);
+    playSound(sev);
+  });
+}
+
+rebuildTopIPs();
+buildLiveFeed();
+</script>
+
+{% endblock %}

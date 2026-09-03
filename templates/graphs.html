@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Attack Statistics</h2>
+<canvas id="ipChart" width="400" height="200"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch("/api/stats/ip")
+  .then(r => r.json())
+  .then(data => {
+    const ctx = document.getElementById("ipChart");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: "Incidents per IP",
+          data: data.counts
+        }]
+      }
+    });
+  });
+</script>
+{% endblock %}
